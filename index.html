@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>赛博任务助手</title>
+    <title>厨子计时器</title>
     <meta name="theme-color" content="#0a0a0a">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -160,6 +160,14 @@
         }
 
         @media (max-width: 600px) {
+            th:nth-child(3) {
+                width: 35%;
+            }
+
+            td:nth-child(3) {
+                font-size: 12px;
+                padding: 6px;
+            }
 
             td,
             th {
@@ -239,17 +247,17 @@
 
 <body>
     <div class="input-group">
-        <input type="text" id="taskInput" placeholder="任务名称" autocomplete="off">
-        <input type="number" step="0.5" id="hoursInput" placeholder="小时数" autocomplete="off">
+        <input type="text" id="taskInput" placeholder="Task Name" autocomplete="off">
+        <input type="number" step="0.5" id="hoursInput" placeholder="0.5h" autocomplete="off">
         <button id="addBtn">⚡ 添加</button>
     </div>
 
     <table id="taskTable">
         <thead>
             <tr>
-                <th class="neon-text">任务</th>
-                <th class="neon-text">剩余时间</th>
-                <th class="neon-text">截止时间</th>
+                <th class="neon-text">Task</th>
+                <th class="neon-text">CountDown</th>
+                <th class="neon-text">DDL</th>
                 <th class="neon-text">重复</th>
                 <th class="neon-text">操作</th>
             </tr>
@@ -376,7 +384,7 @@
             elements.tableBody.innerHTML = tasks.map((task, index) => `
                 <tr>
                     <td>${task.name}</td>
-                    <td>${task.hours} 小时</td>
+                    <td>${task.hours} h</td>
                     <td>${formatDate(new Date(task.deadline))}</td>
                     <td>
                         <div class="repeat-toggle ${task.repeat ? 'repeat-active' : 'repeat-inactive'}">
