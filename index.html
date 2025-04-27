@@ -4,21 +4,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>智能任务助手</title>
-    <meta name="theme-color" content="#4CAF50">
+    <title>赛博任务助手</title>
+    <meta name="theme-color" content="#0a0a0a">
     <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             box-sizing: border-box;
-            font-family: 'Segoe UI', 'PingFang SC', system-ui, sans-serif;
+            font-family: 'Orbitron', 'PingFang SC', system-ui, sans-serif;
             touch-action: manipulation;
         }
 
         body {
             margin: 0;
             padding: 15px;
-            background: #e3f2fd;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2f 100%);
             min-height: 100vh;
+            color: #00f3ff;
         }
 
         .input-group {
@@ -31,49 +33,60 @@
         input {
             flex: 1;
             padding: 12px 15px;
-            border: 2px solid #90caf9;
-            border-radius: 10px;
+            border: 2px solid #00f3ff;
+            border-radius: 6px;
             min-width: 140px;
             font-size: 16px;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.3);
+            color: #00f3ff;
+            transition: all 0.3s;
+            box-shadow: 0 0 8px rgba(0, 243, 255, 0.2);
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
         }
 
         button {
             padding: 12px 20px;
-            background: #2196F3;
+            background: linear-gradient(45deg, #6a00ff, #00ff9d);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 6px;
             cursor: pointer;
             transition: 0.3s;
             font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 15px rgba(106, 0, 255, 0.3);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         }
 
         button:active {
             transform: scale(0.98);
-            background: #1976D2;
+            box-shadow: 0 0 10px rgba(106, 0, 255, 0.5);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            border-radius: 8px;
             overflow: hidden;
+            border: 1px solid #00f3ff;
         }
 
         th,
         td {
             padding: 14px;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
         }
 
         th {
-            background: #2196F3;
-            color: white;
+            background: linear-gradient(45deg, #1a0a2f, #0a1a3f);
+            color: #d0ff00;
+            text-shadow: 0 0 8px rgba(255, 0, 247, 0.3);
         }
 
         .actions {
@@ -88,16 +101,62 @@
             border-radius: 20px;
             font-size: 0.9em;
             transition: 0.3s;
+            border: 1px solid #6a00ff;
         }
 
         .repeat-active {
-            background: #4CAF50;
+            background: linear-gradient(45deg, #6a00ff, #00f3ff);
             color: white;
         }
 
         .repeat-inactive {
-            background: #e0e0e0;
-            color: #666;
+            background: rgba(106, 0, 255, 0.2);
+            color: #00f3ff;
+        }
+
+        .history-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            margin-top: 20px;
+            padding: 15px;
+            display: none;
+            border: 1px solid #6a00ff;
+        }
+
+        .search-group {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .history-table {
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .toggle-history {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #00f7ff, #0e00a3);
+            color: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(106, 0, 255, 0.5);
+            cursor: pointer;
+            z-index: 100;
+            transition: 0.3s;
+        }
+
+        .toggle-history:hover {
+            transform: rotate(180deg);
         }
 
         @media (max-width: 600px) {
@@ -117,32 +176,127 @@
                 min-width: 100%;
             }
         }
+
+        .neon-text {
+            text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff, 0 0 30px #00f3ff;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: -1;
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #6a00ff;
+            box-shadow: 0 0 20px rgba(106, 0, 255, 0.3);
+            position: relative;
+            height: 400px;
+        }
+
+        .chart-title {
+            color: #00f3ff;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #00f3ff;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .chart-tab {
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            background: rgba(106, 0, 255, 0.3);
+            color: #00f3ff;
+            transition: 0.3s;
+            border: 1px solid #6a00ff;
+        }
+
+        .chart-tab.active {
+            background: linear-gradient(45deg, #6a00ff, #00f3ff);
+            color: white;
+        }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="input-group">
         <input type="text" id="taskInput" placeholder="任务名称" autocomplete="off">
         <input type="number" step="0.5" id="hoursInput" placeholder="小时数" autocomplete="off">
-        <button id="addBtn">➕ 添加</button>
-        <button id="sortBtn" style="background: #FF9800;">⏳ 排序</button>
+        <button id="addBtn">⚡ 添加</button>
     </div>
 
     <table id="taskTable">
         <thead>
             <tr>
-                <th>任务</th>
-                <th>剩余时间</th>
-                <th>截止时间</th>
-                <th>重复</th>
-                <th>操作</th>
+                <th class="neon-text">任务</th>
+                <th class="neon-text">剩余时间</th>
+                <th class="neon-text">截止时间</th>
+                <th class="neon-text">重复</th>
+                <th class="neon-text">操作</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
 
+    <div class="toggle-history" onclick="toggleHistoryPanel()">📡</div>
+    <div class="history-panel" id="historyPanel">
+        <div class="search-group">
+            <input type="text" id="searchInput" placeholder="搜索任务名称" style="flex:2;">
+            <input type="date" id="startDate">
+            <input type="date" id="endDate">
+            <button onclick="searchHistory()">🔍 查询</button>
+            <button onclick="clearSearch()" style="background: #4a4a6d;">🔄 重置</button>
+        </div>
+
+        <div class="chart-tabs">
+            <div class="chart-tab active" onclick="showChart('bar')">📊 任务统计</div>
+            <div class="chart-tab" onclick="showChart('pie')">🍰 时间分布</div>
+            <div class="chart-tab" onclick="showChart('line')">📈 完成趋势</div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title neon-text">任务数据可视化</h3>
+            <canvas id="dataChart"></canvas>
+        </div>
+
+        <div class="history-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="neon-text">任务名称</th>
+                        <th class="neon-text">操作时间</th>
+                        <th class="neon-text">持续时间</th>
+                        <th class="neon-text">类型</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </div>
+    </div>
+
     <script>
         let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        let history = JSON.parse(localStorage.getItem('task-history')) || [];
+        let chartInstance = null;
 
         const elements = {
             taskInput: document.getElementById('taskInput'),
@@ -152,25 +306,14 @@
 
         document.body.addEventListener('click', (e) => {
             const target = e.target;
-
             if (target.id === 'addBtn') addTask();
-            if (target.id === 'sortBtn') sortTasks();
 
             const row = target.closest('tr');
             if (row) {
                 const index = Array.from(row.parentNode.children).indexOf(row);
-                if (target.classList.contains('delete-btn')) {
-                    deleteTask(index);
-                }
-                if (target.classList.contains('edit-btn')) {
-                    editTask(index);
-                }
-                if (target.classList.contains('repeat-toggle')) {
-                    toggleRepeat(index);
-                }
-                if (target.classList.contains('complete-btn')) {
-                    completeTask(index);
-                }
+                if (target.classList.contains('complete-btn')) completeTask(index);
+                if (target.classList.contains('edit-btn')) editTask(index);
+                if (target.classList.contains('repeat-toggle')) toggleRepeat(index);
             }
         });
 
@@ -192,20 +335,30 @@
 
             elements.taskInput.value = '';
             elements.hoursInput.value = '';
-            sortTasks(); // 自动排序
+            autoSortAndRender();
         }
 
-        function deleteTask(index) {
-            tasks.splice(index, 1);
-            renderTable();
+        function completeTask(index) {
+            const task = tasks[index];
+            recordHistory(task, '完成');
+
+            if (task.repeat) {
+                task.deadline = Date.now() + task.hours * 3600000;
+            } else {
+                tasks.splice(index, 1);
+            }
+            autoSortAndRender();
         }
 
         function editTask(index) {
-            const newHours = parseFloat(prompt('输入新的倒计时小时数:', tasks[index].hours));
+            const oldTask = tasks[index];
+            const newHours = parseFloat(prompt('输入新的倒计时小时数:', oldTask.hours));
+
             if (!isNaN(newHours) && newHours > 0) {
+                recordHistory(oldTask, '修改');
                 tasks[index].hours = newHours;
                 tasks[index].deadline = Date.now() + newHours * 3600000;
-                sortTasks();
+                autoSortAndRender();
             }
         }
 
@@ -214,16 +367,7 @@
             renderTable();
         }
 
-        function completeTask(index) {
-            if (tasks[index].repeat) {
-                tasks[index].deadline = Date.now() + tasks[index].hours * 3600000;
-            } else {
-                tasks.splice(index, 1);
-            }
-            sortTasks();
-        }
-
-        function sortTasks() {
+        function autoSortAndRender() {
             tasks.sort((a, b) => a.deadline - b.deadline);
             renderTable();
         }
@@ -242,12 +386,62 @@
                     <td class="actions">
                         <button class="complete-btn" style="background: #4CAF50;">完成</button>
                         <button class="edit-btn">修改</button>
-                        <button class="delete-btn" style="background: #f44336;">删除</button>
                     </td>
                 </tr>
             `).join('');
 
             localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function recordHistory(task, type) {
+            history.push({
+                name: task.name,
+                duration: task.hours,
+                timestamp: Date.now(),
+                type: type
+            });
+            if (history.length > 100) history.shift();
+            localStorage.setItem('task-history', JSON.stringify(history));
+            renderHistory();
+            renderCharts(history);
+        }
+
+        function toggleHistoryPanel() {
+            const panel = document.getElementById('historyPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            if (panel.style.display === 'block') renderHistory();
+        }
+
+        function searchHistory() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const start = document.getElementById('startDate').valueAsDate?.getTime() || 0;
+            const end = document.getElementById('endDate').valueAsDate?.getTime() || Infinity;
+
+            const results = history.filter(item => {
+                const time = item.timestamp;
+                return item.name.toLowerCase().includes(keyword) && time >= start && time <= end
+            });
+            renderHistory(results);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            renderHistory();
+        }
+
+        function renderHistory(data = history) {
+            const body = document.getElementById('historyBody');
+            body.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${formatFullDate(new Date(item.timestamp))}</td>
+                    <td>${item.duration} 小时</td>
+                    <td>${item.type}</td>
+                </tr>
+            `).join('');
+            renderCharts(data);
         }
 
         function formatDate(date) {
@@ -256,12 +450,76 @@
                     ${String(date.getMinutes()).padStart(2, '0')}`;
         }
 
-        renderTable();
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .catch(err => console.error('Service Worker注册失败:', err));
+        function formatFullDate(date) {
+            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} 
+                    ${String(date.getHours()).padStart(2, '0')}:
+                    ${String(date.getMinutes()).padStart(2, '0')}`;
         }
+
+        function renderCharts(historyData) {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            const chartType = document.querySelector('.chart-tab.active').getAttribute('onclick').split("'")[1];
+
+            if (chartInstance) chartInstance.destroy();
+
+            const taskStats = historyData.reduce((acc, item) => {
+                if (item.type === '完成') acc[item.name] = (acc[item.name] || 0) + 1;
+                return acc;
+            }, {});
+
+            chartInstance = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: Object.keys(taskStats),
+                    datasets: [{
+                        label: '任务完成次数',
+                        data: Object.values(taskStats),
+                        backgroundColor: [
+                            'rgba(106,0,255,0.8)',
+                            'rgba(0,243,255,0.8)',
+                            'rgba(208,255,0,0.8)'
+                        ],
+                        borderColor: '#00f3ff',
+                        borderWidth: 2,
+                        hoverBackgroundColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#00f3ff',
+                                font: { family: 'Orbitron' }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: '#00f3ff' },
+                            grid: { color: 'rgba(0,243,255,0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#00f3ff' },
+                            grid: { color: 'rgba(0,243,255,0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showChart(type) {
+            document.querySelectorAll('.chart-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            renderCharts(history);
+        }
+
+        renderTable();
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.error('Service Worker注册失败:', err));
+        }
+        renderCharts(history);
     </script>
 </body>
 
