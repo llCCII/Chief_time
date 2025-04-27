@@ -1,217 +1,202 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>任务倒计时</title>
-    <meta name="theme-color" content="#4CAF50">
-    <link rel="manifest" href="manifest.json">
+    <title>倒计时任务识别工具</title>
+    <script src="https://unpkg.com/tesseract.js@v3.0.3/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', sans-serif;
-            touch-action: manipulation;
+        /* 添加加载动画 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
         }
 
-        body {
-            margin: 0;
-            padding: 10px;
-            background: #f5f5f5;
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
-        .input-group {
-            display: flex;
-            gap: 5px;
-            margin: 10px;
-            flex-wrap: wrap;
-        }
-
-        input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            min-width: 120px;
-            font-size: 16px;
-        }
-
-        button {
-            padding: 12px 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.3s;
-            min-width: 60px;
-            font-size: 16px;
-        }
-
-        button:active {
-            background: #45a049;
+        #result {
+            margin-top: 20px;
         }
 
         table {
-            width: 100%;
             border-collapse: collapse;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-top: 15px;
+            width: 100%;
         }
 
         th,
         td {
-            padding: 12px;
+            padding: 8px;
+            border: 1px solid #ddd;
             text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        @media (max-width: 600px) {
-            td {
-                padding: 10px;
-                font-size: 14px;
-            }
-
-            button {
-                padding: 10px 15px;
-            }
         }
     </style>
 </head>
 
 <body>
-    <div class="input-group">
-        <input type="text" id="taskInput" placeholder="任务名称" autocomplete="off">
-        <input type="number" step="0.5" id="hoursInput" placeholder="小时数" autocomplete="off">
-        <button id="addBtn">➕ 添加</button>
-        <button id="sortBtn">🔃 排序</button>
-    </div>
-
-    <table id="taskTable">
-        <thead>
-            <tr>
-                <th>任务</th>
-                <th>倒计时(小时)</th>
-                <th>截止时间</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    <h2>上传任务截图：</h2>
+    <input type="file" id="upload" accept="image/*">
+    <div class="loader" id="loader"></div>
+    <div id="result"></div>
 
     <script>
-        // 数据初始化
-        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        const worker = Tesseract.createWorker({
+            logger: m => console.log(m)
+        });
 
-        // 元素缓存
-        const elements = {
-            taskInput: document.getElementById('taskInput'),
-            hoursInput: document.getElementById('hoursInput'),
-            tableBody: document.getElementById('tableBody')
-        };
-
-        // 事件委托处理
-        document.body.addEventListener('click', (e) => {
-            const target = e.target;
-
-            // 添加任务
-            if (target.id === 'addBtn') {
-                addTask();
+        // 初始化 OCR 引擎
+        (async () => {
+            try {
+                await worker.load();
+                await worker.loadLanguage('chi_sim+eng');
+                await worker.initialize('chi_sim+eng');
+                console.log('OCR引擎初始化完成');
+            } catch (error) {
+                showError('OCR引擎初始化失败: ' + error.message);
             }
+        })();
 
-            // 排序任务
-            if (target.id === 'sortBtn') {
-                sortTasks();
-            }
+        // 处理图片上传
+        document.getElementById('upload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-            // 动态按钮处理
-            const row = target.closest('tr');
-            if (row) {
-                const index = Array.from(row.parentNode.children).indexOf(row);
-                if (target.classList.contains('delete-btn')) {
-                    deleteTask(index);
+            // 显示加载动画
+            showLoading(true);
+            clearResult();
+
+            try {
+                // 创建临时图片预览
+                const imageUrl = URL.createObjectURL(file);
+                const img = await loadImage(imageUrl);
+                URL.revokeObjectURL(imageUrl); // 释放内存
+
+                // 识别文字（含位置信息）
+                console.log('开始识别...');
+                const { data: { lines } } = await worker.recognize(img, {
+                    rectangle: {
+                        top: 0,
+                        left: 0,
+                        width: img.width,
+                        height: img.height
+                    }
+                });
+
+                // 解析结果并渲染
+                const results = parseOCRResults(lines);
+                if (results.length > 0) {
+                    renderResults(results);
+                } else {
+                    showError('未检测到有效的时间格式（xx时xx分）');
                 }
-                if (target.classList.contains('edit-btn')) {
-                    editTask(index);
-                }
+            } catch (error) {
+                showError('识别失败: ' + error.message);
+            } finally {
+                showLoading(false);
             }
         });
 
-        // 核心功能函数
-        function addTask() {
-            const name = elements.taskInput.value.trim();
-            const hours = parseFloat(elements.hoursInput.value);
-
-            if (!name || isNaN(hours) || hours <= 0) {
-                alert('请输入有效的任务名称和小时数');
-                return;
-            }
-
-            const deadline = Date.now() + hours * 3600000;
-
-            tasks.push({
-                name,
-                hours,
-                deadline
+        // 辅助函数：加载图片
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = (e) => reject(new Error('图片加载失败'));
+                img.src = url;
             });
-
-            elements.taskInput.value = '';
-            elements.hoursInput.value = '';
-            renderTable();
         }
 
-        function deleteTask(index) {
-            tasks.splice(index, 1);
-            renderTable();
+        // 解析逻辑（增强版）
+        function parseOCRResults(lines) {
+            const timePattern = /(\d+)\s*时\s*(\d+)\s*分/;
+            const results = [];
+
+            lines.forEach((line, index) => {
+                const text = line.text.replace(/\s+/g, ''); // 去除空格干扰
+                const match = timePattern.exec(text);
+                if (match) {
+                    const hours = parseInt(match[1]), minutes = parseInt(match[2]);
+                    const taskLine = findNearestTaskLine(lines, index);
+                    results.push({
+                        task: taskLine?.text || "未命名任务",
+                        time: `${hours}时${minutes}分`,
+                        dueTime: moment().add(hours, 'h').add(minutes, 'm').format('YYYY-MM-DD HH:mm')
+                    });
+                }
+            });
+            return results;
         }
 
-        function editTask(index) {
-            const newHours = parseFloat(prompt('输入新的倒计时小时数:', tasks[index].hours));
+        // 增强版任务名匹配（考虑垂直和水平位置）
+        function findNearestTaskLine(lines, currentIndex) {
+            const currentLine = lines[currentIndex];
+            let closestLine = null;
+            let minDistance = Infinity;
 
-            if (!isNaN(newHours) && newHours > 0) {
-                tasks[index].hours = newHours;
-                tasks[index].deadline = Date.now() + newHours * 3600000;
-                renderTable();
+            for (let i = currentIndex - 1; i >= 0; i--) {
+                const line = lines[i];
+                // 计算垂直距离（当前行顶部 - 候选行底部）
+                const verticalDist = currentLine.bbox.y0 - line.bbox.y1;
+                // 水平重叠检测
+                const horizontalOverlap =
+                    (line.bbox.x0 < currentLine.bbox.x1) &&
+                    (line.bbox.x1 > currentLine.bbox.x0);
+
+                if (verticalDist > 0 && verticalDist < 100 && horizontalOverlap) {
+                    if (verticalDist < minDistance) {
+                        minDistance = verticalDist;
+                        closestLine = line;
+                    }
+                }
             }
+            return closestLine;
         }
 
-        function sortTasks() {
-            tasks.sort((a, b) => a.deadline - b.deadline);
-            renderTable();
+        // 界面交互函数
+        function showLoading(show) {
+            document.getElementById('loader').style.display = show ? 'block' : 'none';
         }
 
-        // 渲染表格
-        function renderTable() {
-            elements.tableBody.innerHTML = tasks.map((task, index) => `
-                <tr>
-                    <td>${task.name}</td>
-                    <td>${task.hours}</td>
-                    <td>${formatDate(new Date(task.deadline))}</td>
-                    <td>
-                        <button class="delete-btn">删除</button>
-                        <button class="edit-btn">修改</button>
-                    </td>
-                </tr>
-            `).join('');
-
-            localStorage.setItem('tasks', JSON.stringify(tasks));
+        function renderResults(results) {
+            const html = `
+                <h3>识别结果：</h3>
+                <table>
+                    <tr><th>任务名</th><th>任务时间</th><th>预计完成时间</th></tr>
+                    ${results.map(item => `
+                        <tr>
+                            <td>${item.task}</td>
+                            <td>${item.time}</td>
+                            <td>${item.dueTime}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+            document.getElementById('result').innerHTML = html;
         }
 
-        // 日期格式化
-        function formatDate(date) {
-            return `${date.getMonth() + 1}/${date.getDate()} 
-                    ${String(date.getHours()).padStart(2, '0')}:
-                    ${String(date.getMinutes()).padStart(2, '0')}`;
+        function showError(message) {
+            document.getElementById('result').innerHTML = `
+                <div style="color: red; padding: 10px; border: 1px solid red;">
+                    ${message}
+                </div>
+            `;
         }
 
-        // 初始化渲染
-        renderTable();
-
-        // Service Worker注册
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .catch(err => console.error('Service Worker注册失败:', err));
+        function clearResult() {
+            document.getElementById('result').innerHTML = '';
         }
     </script>
 </body>
