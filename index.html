@@ -164,8 +164,13 @@
                 width: 30%;
             }
 
-            th:nth-child() {
+            th:nth-child(2) {
                 width: 20%;
+            }
+
+            td:nth-child(2) {
+                font-size: 11px;
+                padding: 5px;
             }
 
             th:nth-child(3) {
@@ -396,7 +401,7 @@
                     <td>${formatDate(new Date(task.deadline))}</td>
                     <td>
                         <div class="repeat-toggle ${task.repeat ? 'repeat-active' : 'repeat-inactive'}">
-                            ${task.repeat ? '√' : '×'}
+                            ${task.repeat ? '√' : ''}
                         </div>
                     </td>
                     <td class="actions">
