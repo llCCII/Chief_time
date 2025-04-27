@@ -160,12 +160,20 @@
         }
 
         @media (max-width: 600px) {
+            th:nth-child(1) {
+                width: 30%;
+            }
+
+            th:nth-child() {
+                width: 20%;
+            }
+
             th:nth-child(3) {
                 width: 30%;
             }
 
             td:nth-child(3) {
-                font-size: 10px;
+                font-size: 11px;
                 padding: 5px;
             }
 
@@ -388,7 +396,7 @@
                     <td>${formatDate(new Date(task.deadline))}</td>
                     <td>
                         <div class="repeat-toggle ${task.repeat ? 'repeat-active' : 'repeat-inactive'}">
-                            ${task.repeat ? '已开启' : '已关闭'}
+                            ${task.repeat ? '√' : '×'}
                         </div>
                     </td>
                     <td class="actions">
